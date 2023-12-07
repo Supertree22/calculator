@@ -17,6 +17,7 @@ function reducer(state, { type, payload }) {
       if (state.overwrite) {
         return {
           ...state,
+          previousOperand: null,
           currentOperand: payload.digit,
           overwrite: false,
         }
@@ -24,8 +25,16 @@ function reducer(state, { type, payload }) {
       if (payload.digit === "0" && state.currentOperand === "0") {
         return state
       }
-      if (payload.digit === "." && state.currentOperand.includes(".")) {
-        return state
+      if (payload.digit === ".") {
+        if (state.currentOperand == null) {
+          return {
+            ...state,
+            currentOperand: `0${payload.digit}`
+          }
+        }
+        else if (state.currentOperand.includes(".")) {
+          return state
+        }
       }
       return {
         ...state,
@@ -33,6 +42,15 @@ function reducer(state, { type, payload }) {
       }
 
     case ACTIONS.CHOOSE_OPERATION:
+      if (state.overwrite) {
+        return {
+          ...state,
+          overwrite: false,
+          previousOperand: state.currentOperand,
+          operation: payload.operation,
+          currentOperand: null,
+        }  
+      }
       if (state.currentOperand == null && state.previousOperand == null) {
         return state
       }
@@ -46,13 +64,13 @@ function reducer(state, { type, payload }) {
         return {
           ...state,
           operation: payload.operation,
-          previousOperand: state.currentOperand,
+          previousOperand: formatOperand(state.currentOperand),
           currentOperand: null,
         }
       }
       return {
         ...state,
-        previousOperand: evaluate(state),
+        previousOperand: `${state.previousOperand} ${state.operation} ${formatOperand(state.currentOperand)}`,
         operation: payload.operation,
         currentOperand: null,
       }
@@ -87,7 +105,7 @@ function reducer(state, { type, payload }) {
       return {
         ...state,
         overwrite: true,
-        previousOperand: null,
+        previousOperand: `${state.previousOperand} ${state.operation} ${formatOperand(state.currentOperand)}`,
         operation: null,
         currentOperand: evaluate(state),
       }
@@ -98,7 +116,31 @@ function reducer(state, { type, payload }) {
 }
 
 function evaluate({ currentOperand, previousOperand, operation }) {
-  const prev = parseFloat(previousOperand)
+  // Unpack previous operands (Can potentially be long)
+  const operands = previousOperand.split(" ")
+  let prev = parseFloat(operands[0].replace(/,/g, ''))
+  // TODO: Fix float errors!
+  console.log(prev)
+  for (let i = 2; i < operands.length; i += 2) {
+    let op = operands[i-1]
+    switch (op) {
+      case "+":
+      prev = prev + parseFloat(operands[i].replace(/,/g, ''))
+      break
+    case "-":
+      prev = prev - parseFloat(operands[i].replace(/,/g, ''))
+      break
+    case "*":
+      prev = prev * parseFloat(operands[i].replace(/,/g, ''))
+      break
+    case "÷":
+      prev = prev / parseFloat(operands[i].replace(/,/g, ''))
+      break
+    default:
+    }
+  }
+  // TODO: Ensure order of operations is correct! (multiply and divide first)
+
   const current = parseFloat(currentOperand)
   if (isNaN(prev) || isNaN(current)) return ""
   let computation = ""
@@ -117,6 +159,7 @@ function evaluate({ currentOperand, previousOperand, operation }) {
       break
     default:
   }
+  computation = computation * computation / computation
 
   return computation.toString()
 }
@@ -139,7 +182,7 @@ function App() {
     <div className="calculator-grid">
       <div className="output">
         <div className="previous-operand">
-          {formatOperand(previousOperand)} {operation}
+          {previousOperand} {operation}
         </div>
         <div className="current-operand">{formatOperand(currentOperand)}</div>
       </div>
