@@ -116,10 +116,13 @@ function reducer(state, { type, payload }) {
 }
 
 function evaluate({ currentOperand, previousOperand, operation }) {
+  let fullOperation = previousOperand + ' ' + operation + ' ' + currentOperand
+  let computation = eval(fullOperation.replace(/,/g, '').replace(/÷/g,'/'))
+
+  /*
   // Unpack previous operands (Can potentially be long)
   const operands = previousOperand.split(" ")
   let prev = parseFloat(operands[0].replace(/,/g, ''))
-  // TODO: Fix float errors!
   console.log(prev)
   for (let i = 2; i < operands.length; i += 2) {
     let op = operands[i-1]
@@ -139,7 +142,6 @@ function evaluate({ currentOperand, previousOperand, operation }) {
     default:
     }
   }
-  // TODO: Ensure order of operations is correct! (multiply and divide first)
 
   const current = parseFloat(currentOperand)
   if (isNaN(prev) || isNaN(current)) return ""
@@ -159,7 +161,7 @@ function evaluate({ currentOperand, previousOperand, operation }) {
       break
     default:
   }
-  computation = computation * computation / computation
+  */
 
   return computation.toString()
 }
